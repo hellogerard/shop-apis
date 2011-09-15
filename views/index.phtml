@@ -1,0 +1,99 @@
+  <h1>Enter a grocery item or UPC-type number <em>(UPC-type number does not work so well)</em></h1>
+
+  <form name="form" id="form" method="post" action="" accept-charset="utf-8">
+    <input type="text" name="q" id="q" placeholder="e.g. peanut butter" value="" />
+    <input type="submit" name="submit" id="submit" value="Submit" />
+  </form>
+
+  <div id="results">&nbsp;</div>
+
+<?php content_for('js'); ?>
+
+  <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.min.js"></script>
+  <script type="text/javascript">
+
+  $(function() {
+
+    String.prototype.isdigit = function() {
+      return !!this && !/[^\d]/.test(this);
+    }
+      
+    gSearch = {
+      search: function(q, callback) {
+        // given product name, return substitute product names
+        $.getJSON('https://www.googleapis.com/shopping/search/v1/public/products?key=AIzaSyBcW9A4QHv6bQzMfDH1oYrATzOymq8wtJc&country=US&alt=json&callback=?',
+          { q: q },
+          function(response) {
+            callback(response.items);
+          }
+        );
+      }
+    };
+
+    gSuggest = {
+      search: function(q, callback) {
+        // given product name, return complementary product names
+        $.getJSON('http://google.com/complete/search?output=json&callback=?',
+          { q: q },
+          function(response) {
+            callback(response[1]);
+          }
+        );
+      }
+    };
+
+    shopSavvy = {
+      search: function(id, callback) {
+        // well, UPC does not work so well, so let's allow free text               
+        if (id.isdigit()) {
+          // given id (e.g. UPC), return product names
+          $.getJSON('/shopsavvy/' + id,
+            function(response) {
+              callback(response.Title.replace(/[^a-z ]| oz| ea| gm/ig, ''));
+            }
+          );
+
+        } else {
+          callback(id);
+        }
+      }
+    };
+
+    $('#form').submit(function(e) {
+      e.preventDefault();
+      $('#results').addClass('ajaxy');
+
+      // convert UPC to product name
+      shopSavvy.search($('#q').val(), function(product) {
+        $('#results').html('<div><h1>Product: </h1>' + product + '</div>');
+
+        // find similar product names
+        gSearch.search(product, function(similar) {
+          $('#results').append('<div><h1>Substitute items:</h1></div>');
+          $('#results').append('<ul id="similar">');
+          $.each(similar, function(i, item) {
+            $('#results ul#similar').append('<li>' + item.product.title + ' <em>(' + (item.gtin ? item.gtin : 'no UPC') + ')</em></li>');
+          });
+        });
+
+        // find complementary product names
+        gSuggest.search(product, function(complements) {
+          $('#results').append('<div><h1>Complementary items:</h1></div>');
+          $('#results').append('<ul id="complement">');
+          $.each(complements, function(i, item) {
+            $('#results ul#complement').append('<li>' + item[0].replace($.trim(product).toLowerCase(), '') + '</li>');
+          });
+        });
+      });
+
+      $('#results').removeClass();
+    });
+
+    //$('#q').focus();
+
+  });
+
+  </script>
+
+<?php end_content_for(); ?>
+
