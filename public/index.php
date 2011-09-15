@@ -24,11 +24,11 @@ function before()
 // application
 //
 
-dispatch('/', function() {
+dispatch_get('/', function() {
     return html('index.phtml');
 });
 
-dispatch('/shopsavvy/:id', function($id) {
+dispatch_get('/shopsavvy/:id', function($id) {
 
     if (empty($id))
     {
