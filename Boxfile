@@ -1,1 +1,2 @@
-document_root: /public
+web1:
+    document_root: /public
